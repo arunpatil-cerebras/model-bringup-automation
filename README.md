@@ -12,15 +12,15 @@ python automate_configs.py
     base_config_file = 'exp_fp16_ND_difft_csx.yaml'
 
 ## Choose a base run Command
-base_run_sh = """#!/bin/bash
-config={config_file} 
-outdir={log_dir}
-mkdir -p $outdir
-mountdirs="/cra-614"
-namespace="cra-614-240"
-mode="train"
+    base_run_sh = """#!/bin/bash
+    config={config_file} 
+    outdir={log_dir}
+    mkdir -p $outdir
+    mountdirs="/cra-614"
+    namespace="cra-614-240"
+    mode="train"
 
-HDF5_USE_FILE_LOCKING='FALSE' python run.py CSX \
+    HDF5_USE_FILE_LOCKING='FALSE' python run.py CSX \
         --params $config \
         --mode $mode \
         --model_dir $outdir \
@@ -28,19 +28,19 @@ HDF5_USE_FILE_LOCKING='FALSE' python run.py CSX \
         --mount_dirs $mountdirs \
         --disable_version_check \
         --compile_only 
-"""
+    """
 
 ## Define parameters and options
-param_dict = {}
+    param_dict = {}
+    param_dict['trainer.init.model.attention_module'] = ['diff_attention', 'aiayn_attention']
+    param_dict['trainer.init.model.attention_activation'] = ['softmax', 'sigmoid']
+    param_dict['trainer.init.model.num_hidden_layers'] = [12,4]
+    param_dict['trainer.init.model.num_heads'] =  [12,4]
+    param_dict['trainer.init.model.position_embedding_type'] = ['learned', 'alibi', {'position_embedding_type':'rotary', 'rope_theta':500000, 'rotary_dim':64}]
+    param_dict['trainer.fit.train_dataloader.batch_size'] = [256,128,64,8]
 
-param_dict['trainer.init.model.attention_module'] = ['diff_attention', 'aiayn_attention']
+## Define Exclusion Combinations
+    exclusions = []
+    exclusions.append({'trainer.init.model.attention_module': 'diff_attention', 'trainer.init.model.position_embedding_type': 'alibi'})
 
-param_dict['trainer.init.model.attention_activation'] = ['softmax', 'sigmoid']
 
-param_dict['trainer.init.model.num_hidden_layers'] = [12,4]
-
-param_dict['trainer.init.model.num_heads'] =  [12,4]
-
-param_dict['trainer.init.model.position_embedding_type'] = ['learned', 'alibi', {'position_embedding_type':'rotary', 'rope_theta':500000, 'rotary_dim':64}]
-
-param_dict['trainer.fit.train_dataloader.batch_size'] = [256,128,64,8]
