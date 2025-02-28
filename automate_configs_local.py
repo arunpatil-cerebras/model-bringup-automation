@@ -6,7 +6,6 @@ base_config_file = 'exp_fp16_ND_difft.yaml'
 base_run_sh = """
 #!/bin/bash 
 python3 run.py CSX --params {config_file} --model_dir {log_dir} --mode train --compile_only --num_act_servers 1 --mgmt_address localhost:9000
-echo RUN_COMPLETE 
 """
 
 # Define parameters and options

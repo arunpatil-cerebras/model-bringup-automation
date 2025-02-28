@@ -56,7 +56,9 @@ def run_script_cwd(script_name, log_file):
     else:
         process = subprocess.Popen(['bash', script_name], 
                                    start_new_session=True)
-    return process
+        
+    return_status = process.wait()
+    return return_status, process
 
 def run_script(parent_dir, current_working_directory, script_name, log_file=None):
 
@@ -76,6 +78,8 @@ def run_script(parent_dir, current_working_directory, script_name, log_file=None
 
 def monitor_and_kill(log_compile_file, process_to_kill):
 
+    os.killpg(os.getpgid(process_to_kill.pid), signal.SIGTERM)
+    return 
     while(1):
         with open(log_compile_file, 'r') as f:
             content = f.read()
@@ -104,7 +108,7 @@ def run_cur_Script(parent_dir, current_working_directory, script1, script2):
 
     # Start script2
     log_complie_file = "logging_compile_file.txt"
-    process2 = run_script_cwd(script2, log_complie_file)
+    return_status,process2 = run_script_cwd(script2, log_complie_file)
 
     # Create a monitoring process for script1
     monitor = multiprocessing.Process(target=monitor_and_kill, args=(log_complie_file, process1))
@@ -113,7 +117,7 @@ def run_cur_Script(parent_dir, current_working_directory, script1, script2):
     try:
         # Wait for both processes to finish
         process1.wait()
-        process2.wait()
+        #return_code = process2.wait()
     except KeyboardInterrupt:
         # Handle Ctrl+C
         print("Interrupted. Terminating processes...")
@@ -124,9 +128,10 @@ def run_cur_Script(parent_dir, current_working_directory, script1, script2):
         # Clean up
         monitor.join()
         process1.wait()
-        process2.wait()
+        #process2.wait()
 
     print("All processes finished.")
+    return return_status
 
 
 
@@ -175,11 +180,16 @@ for run_sh_path in data.keys():
         subprocess.run(["chmod", "+x", run_sh_path], check=True)
         
         # Execute the script
-        run_cur_Script(parentdir, current_working_directory, script1, run_sh_path)
+        return_code = run_cur_Script(parentdir, current_working_directory, script1, run_sh_path)
         #result = subprocess.run([run_sh_path], capture_output=True, text=True, check=True)
         #cur_info["error_info"] = result.stdout
-        print(run_sh_path, "  Successfully Compiled")
-        cur_info['Status'] = "Complied"
+        if(return_code == 0):
+            print(run_sh_path, "  Successfully Compiled")
+            cur_info['Status'] = "Complied"
+        else:
+            print(run_sh_path, "  Failed Compilation")
+            cur_info['Status'] = "Falied"
+
         
     except subprocess.CalledProcessError as e:
         print(run_sh_path, "  Failed to Compiled")
